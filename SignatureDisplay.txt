@@ -1,0 +1,77 @@
+	JSONObject json ;
+	
+			json =  new JSONObject(serviceResponse).getJSONObject("Response");//serviceResponse is the response we are getting from esb
+
+			String encryptedResponse=json.getJSONObject("Body").getJSONObject("getSignatureResponse").getString("encryptedResponse");
+			
+			String decryptedRespon=AES128.decrypt(encryptedResponse, encryptionKey);
+			
+			json = new JSONObject(decryptedResponse).getJSONObject("ResponseBody");
+			
+			jsonarr = json.getJSONArray("signatureData");
+		 	len = jsonarr.length();
+			System.out.println("signatureData array length "+jsonarr.length());
+			
+	
+			for(int i=0;i<jsonarr.length();i++){
+			
+			list.add(jsonarr.optString(i)); //saving in arraylist 
+			
+			
+			}
+			
+			 String[] Stringarr = list.toArray(new String[list.size()]);
+				
+			String s[] = Stringarr[0].split(",");
+			
+			String sign[] = s[4].split(":");
+			
+			
+			sign[1] // this is the base64 encoded string 
+			
+			
+			byte[] decoded = Base64.decodeBase64(sign[1]); //decode 
+				
+			//decoded = DatatypeConverter.parseBase64Binary(sig);
+			
+				
+			String tempfolder = System.getProperty("java.io.tmpdir");		
+			String tmpfilepath = tempfolder+""+new Date().getTime()+"."+imageext; //imageext is tiff here			
+			File myfile = new File(tmpfilepath);	
+			String jpgfile = tempfolder+"tifftojp.jpg";
+				
+			FileOutputStream bstream = new FileOutputStream(myfile);
+			BufferedOutputStream stream = new BufferedOutputStream(bstream);		
+			stream.write(decoded);				//here we are writing into tiff file, which is not able to open(from paint) local machine
+			stream.close();	
+		
+			try {	
+				SeekableStream	sek = new FileSeekableStream(myfile);
+				System.out.println("myfile xists "+myfile.exists());
+				TIFFDecodeParam param = null;
+				ImageDecoder dec = ImageCodec.createImageDecoder("tiff", sek, param);
+				//System.out.println("imagedecoedr "+dec);
+				RenderedImage op = dec.decodeAsRenderedImage(0);	// here getting "required field, is not present in the TIFF file" because of image is not proper.
+				System.out.println("renderedimage "+op);
+				
+				FileOutputStream fos = new FileOutputStream(jpgfile);
+				JPEGEncodeParam jpgparam = new JPEGEncodeParam();
+				jpgparam.setQuality(67);
+				ImageEncoder en = ImageCodec.createImageEncoder("jpg", fos, jpgparam);
+				en.encode(op);
+				fos.close();
+				
+			}
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
